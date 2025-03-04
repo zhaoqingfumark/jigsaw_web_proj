@@ -1,0 +1,10 @@
+# Galison拼圖產品URL列表
+# 每行一個URL，以#開頭的行為註釋
+
+# 箭頭和羽毛拼圖
+https://www.galison.com/collections/500-piece-jigsaw-puzzles/products/arrows-feathers-500-piece-foil-puzzle
+
+# Andy Warhol花朵拼圖
+https://www.galison.com/collections/500-piece-jigsaw-puzzles/products/andy-warhol-flowers-500-piece-puzzle
+
+# 其他拼圖產品可以添加在這裡 
