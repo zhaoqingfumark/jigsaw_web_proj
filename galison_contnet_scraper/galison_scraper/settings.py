@@ -3,21 +3,21 @@ BOT_NAME = "galison_scraper"
 SPIDER_MODULES = ["galison_scraper.spiders"]
 NEWSPIDER_MODULE = "galison_scraper.spiders"
 
-# 遵守robots.txt規則
+# Obey robots.txt rules
 ROBOTSTXT_OBEY = True
 
-# 配置user agent以避免被封
+# Configure user agent to avoid being banned
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
 
-# 下載延遲，避免請求過於頻繁
+# Download delay to avoid too frequent requests
 DOWNLOAD_DELAY = 2
 
-# 圖片存儲設置 - 使用相對路徑
-# 從crawler_utils導入路徑定義，如果不可用則使用相對路徑
+# Image storage settings - using relative path
+# Import path definitions from crawler_utils, or use relative path if unavailable
 try:
     import os
     import sys
-    # 添加scripts目錄到Python路徑
+    # Add scripts directory to Python path
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     scripts_dir = os.path.join(project_root, 'scripts')
     if scripts_dir not in sys.path:
@@ -27,13 +27,13 @@ try:
 except ImportError:
     IMAGES_STORE = '../galison_contnet_scraper/outputs/images'
 
-# 啟用圖片下載管道和產品信息存儲管道
+# Enable image download pipeline and product info storage pipeline
 ITEM_PIPELINES = {
    "galison_scraper.pipelines.GalisonImagesPipeline": 1,
    "galison_scraper.pipelines.GalisonProductInfoPipeline": 300,
 }
 
-# 配置請求頭
+# Configure request headers
 DEFAULT_REQUEST_HEADERS = {
    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
    "Accept-Language": "en",
