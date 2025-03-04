@@ -1,80 +1,79 @@
 import json
 import os
+import sys
 from scrapy.pipelines.images import ImagesPipeline
 from scrapy import Request
-import hashlib
-import re
+from .utils import sanitize_filename, generate_folder_path, hash_url
+
+# 添加scripts目錄到Python路徑
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+scripts_dir = os.path.join(project_root, 'scripts')
+if scripts_dir not in sys.path:
+    sys.path.append(scripts_dir)
+
+# 從crawler_utils導入目錄設置
+try:
+    from crawler_utils import get_info_dir, RELATIVE_INFOS_PATH
+    INFO_DIR = get_info_dir()
+except ImportError:
+    # 如果無法導入，使用相對路徑
+    INFO_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'galison_contnet_scraper', 'outputs', 'infos')
+
+# 確保信息目錄存在
+os.makedirs(INFO_DIR, exist_ok=True)
 
 class GalisonImagesPipeline(ImagesPipeline):
     """處理圖片下載的管道"""
     
     def get_media_requests(self, item, info):
-        for image_url in item['image_urls']:
+        """從項目生成圖片下載請求"""
+        for image_url in item.get('image_urls', []):
             yield Request(image_url, meta={'item': item})
-
-    def folder_path(self, item):
-        """生成產品文件夾名稱 (產品id+產品名)"""
-        product_number = item.get('product_number', 'unknown')
-        title = self.sanitize_filename(item['title'])
-        return f"{product_number}_{title}"
-    
-    def sanitize_filename(self, name):
-        """清理文件名，移除不合法字符"""
-        # 移除標點符號並替換空格
-        sanitized = re.sub(r'[^\w\s-]', '', name)
-        sanitized = re.sub(r'[\s-]+', '_', sanitized)
-        return sanitized
 
     def file_path(self, request, response=None, info=None, *, item=None):
         """自定義圖片保存路徑"""
         item = request.meta['item']
-        # 使用產品id+產品名稱作為文件夾名稱
-        folder = self.folder_path(item)
-        # 使用圖片URL的哈希值作為檔案名
-        image_guid = hashlib.md5(request.url.encode()).hexdigest()
+        # 獲取產品信息
+        product_number = item.get('product_number', 'unknown')
+        title = item.get('title', 'Untitled')
+        
+        # 生成文件夾名稱
+        folder = generate_folder_path(product_number, title)
+        
+        # 對圖片URL進行哈希處理，生成唯一檔案名
+        image_guid = hash_url(request.url)
+        
         # 返回圖片保存路徑
         return f'{folder}/{image_guid}.jpg'
+
 
 class GalisonProductInfoPipeline:
     """處理產品信息保存的管道"""
     
-    def sanitize_filename(self, name):
-        """清理文件名，移除不合法字符"""
-        # 移除標點符號並替換空格
-        sanitized = re.sub(r'[^\w\s-]', '', name)
-        sanitized = re.sub(r'[\s-]+', '_', sanitized)
-        return sanitized
-
-    def folder_path(self, item):
-        """生成產品文件夾名稱 (產品id+產品名)"""
-        product_number = item.get('product_number', 'unknown')
-        title = self.sanitize_filename(item['title'])
-        return f"{product_number}_{title}"
-    
     def process_item(self, item, spider):
-        # 獲取產品文件夾名稱
-        folder_name = self.folder_path(item)
+        """處理項目，保存產品信息為JSON文件"""
+        # 獲取產品信息
+        product_number = item.get('product_number', 'unknown')
+        title = item.get('title', 'Untitled')
         
-        # 創建產品信息目錄
-        info_dir = '/Users/markus/jigsaw-proj/demo123/galison_scraper/infos'
-        if not os.path.exists(info_dir):
-            os.makedirs(info_dir)
+        # 生成文件夾名稱
+        folder_name = generate_folder_path(product_number, title)
+        
+        # 確保目錄存在
+        os.makedirs(INFO_DIR, exist_ok=True)
 
         # 保存產品信息JSON到infos目錄
-        file_path = os.path.join(info_dir, f'{folder_name}.json')
+        file_path = os.path.join(INFO_DIR, f'{folder_name}.json')
 
-        # 轉換為字典並儲存為JSON
-        item_dict = {
-            'title': item.get('title', ''),
-            'price': item.get('price', ''),
-            'description': item.get('description', ''),
-            'author': item.get('author', ''),
-            'product_number': item.get('product_number', ''),
-            'product_details': item.get('product_details', []),
-            'image_urls': item.get('image_urls', [])
-        }
+        # 將項目轉換為字典
+        item_dict = {key: item.get(key, '') for key in [
+            'title', 'price', 'description', 'author', 
+            'product_number', 'product_details', 'image_urls'
+        ]}
 
+        # 保存為JSON文件
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(item_dict, f, ensure_ascii=False, indent=4)
 
+        spider.logger.info(f"產品信息已保存至: {file_path}")
         return item 
