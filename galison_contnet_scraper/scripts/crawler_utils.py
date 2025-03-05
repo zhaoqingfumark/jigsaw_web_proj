@@ -8,27 +8,17 @@ import os
 import subprocess
 import logging
 from urllib.parse import urlparse
+import sys
+import csv
 
-# Dynamically calculate project root directory (instead of hardcoding)
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Ensure parent directory in PATH
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Define log and output directories
-LOGS_DIR = os.path.join(ROOT_DIR, 'logs')
-OUTPUTS_DIR = os.path.join(ROOT_DIR, 'outputs')
-
-# Use relative path settings consistent with settings.py
-# Paths relative to the Scrapy project directory
-RELATIVE_IMAGES_PATH = '../galison_contnet_scraper/outputs/images'
-RELATIVE_INFOS_PATH = '../galison_contnet_scraper/outputs/infos'
-
-# Provide absolute paths for direct use in scripts
-IMAGES_DIR = os.path.join(ROOT_DIR, 'outputs', 'images')
-INFOS_DIR = os.path.join(ROOT_DIR, 'outputs', 'infos')
-
-# Ensure directories exist
-os.makedirs(LOGS_DIR, exist_ok=True)
-os.makedirs(IMAGES_DIR, exist_ok=True)
-os.makedirs(INFOS_DIR, exist_ok=True)
+# Import path configuration
+from path_config import (
+    LOGS_DIR, IMAGES_DIR, INFOS_DIR, ROOT_DIR, 
+    RELATIVE_IMAGES_PATH, RELATIVE_INFOS_PATH
+)
 
 # Configure logging
 logging.basicConfig(
@@ -106,11 +96,11 @@ def run_spider(url=None, verbose=True):
         logger.error(f"Error running spider: {str(e)}")
         return False
 
-def read_urls(file_path):
-    """Read URL list from file
+def read_urls_from_csv(csv_file_path):
+    """Read URL list from CSV file
     
     Args:
-        file_path: Path to URL file
+        csv_file_path: Path to CSV file containing URLs
         
     Returns:
         list: List of URLs
@@ -118,27 +108,37 @@ def read_urls(file_path):
     urls = []
     try:
         # Handle relative paths
-        if not os.path.isabs(file_path):
-            file_path = os.path.join(ROOT_DIR, file_path)
+        if not os.path.isabs(csv_file_path):
+            csv_file_path = os.path.join(ROOT_DIR, csv_file_path)
             
-        with open(file_path, 'r') as f:
-            for line in f:
-                url = line.strip()
-                if url and not url.startswith('#'):  # Ignore empty lines and comments
-                    urls.append(url)
+        with open(csv_file_path, 'r') as f:
+            csv_reader = csv.reader(f)
+            # Skip header row
+            next(csv_reader, None)
+            for row in csv_reader:
+                if len(row) >= 2:  # Assuming URL is in the second column (index 1)
+                    url = row[1].strip()
+                    if url and not url.startswith('#'):  # Ignore empty URLs and comments
+                        urls.append(url)
+        
+        if urls:
+            logger.info(f"Successfully read {len(urls)} URLs from CSV file")
+        else:
+            logger.warning("No valid URLs found in CSV file")
+            
         return urls
     except FileNotFoundError:
-        logger.error(f"URL file not found: {file_path}")
+        logger.error(f"CSV file not found: {csv_file_path}")
         return []
     except Exception as e:
-        logger.error(f"Error reading URL file: {e}")
+        logger.error(f"Error reading CSV file: {e}")
         return []
 
-# Export output directory paths for other modules
+# Export directory path functions, maintain backward compatibility
 def get_info_dir():
     """Get product info storage directory"""
     return INFOS_DIR
 
 def get_images_dir():
     """Get images storage directory"""
-    return IMAGES_DIR 
+    return IMAGES_DIR

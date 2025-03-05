@@ -3,7 +3,8 @@
 Unified crawler execution entry point
 Usage: 
   python run.py crawl [URL]        # Execute single crawler
-  python run.py batch urls.txt     # Execute batch crawler
+  python run.py batch urls.txt     # Execute batch crawler with txt file
+  python run.py batch galison_puzzles.csv  # Execute batch crawler with CSV file
   python run.py batch urls.txt --delay 3  # Specify delay time
 """
 
@@ -11,12 +12,15 @@ import sys
 import os
 import argparse
 
-# Add script directory to Python path
-script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scripts')
-sys.path.insert(0, script_dir)
+# 确保脚本目录在Python路径中
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-# Import logging configuration
+# 导入路径配置和日志配置
+from path_config import ensure_dirs_exist
 from scripts.crawler_utils import logger
+
+# 确保所有必要目录存在
+ensure_dirs_exist()
 
 def main():
     """Main entry function"""
@@ -29,8 +33,8 @@ def main():
     
     # Batch crawler command
     batch_parser = subparsers.add_parser('batch', help='Execute batch URL crawler')
-    batch_parser.add_argument('url_file', help='Path to text file containing URLs')
-    batch_parser.add_argument('--delay', type=int, default=5, help='Delay time between crawls (seconds)')
+    batch_parser.add_argument('url_file', help='Path to file containing URLs (supports .txt or .csv format)')
+    batch_parser.add_argument('--delay', type=int, default=0, help='Delay time between crawls (seconds)')
     
     args = parser.parse_args()
     
@@ -71,4 +75,4 @@ def main():
     return 1
 
 if __name__ == "__main__":
-    sys.exit(main()) 
+    sys.exit(main())

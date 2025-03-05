@@ -1,79 +1,91 @@
 #!/usr/bin/env python
 """
-批量爬取多個拼圖產品頁面
-用法: python batch_crawl.py urls.txt [--delay 5]
-其中urls.txt是包含多個URL的文本文件，每行一個URL
---delay參數可選，用於設置爬蟲間的延遲時間（秒）
+Batch crawler for multiple puzzle product pages
+Usage: python batch_crawl.py products.csv [--delay 0]
+
+The CSV file should contain product URLs in the second column.
+The --delay parameter is optional and sets the delay time between crawls (seconds), default is 0.
 """
 
 import sys
 import time
+import os
 import argparse
-from crawler_utils import run_spider, read_urls, logger
+
+# Ensure parent directory in PATH
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+from scripts.crawler_utils import run_spider, read_urls_from_csv, logger
 
 def parse_args():
-    """解析命令行參數"""
-    parser = argparse.ArgumentParser(description='批量爬取多個產品頁面')
-    parser.add_argument('url_file', help='包含URL的文本文件路徑')
-    parser.add_argument('--delay', type=int, default=5, help='爬蟲間的延遲時間（秒）')
+    """Parse command line arguments"""
+    parser = argparse.ArgumentParser(description='Batch crawl multiple product pages')
+    parser.add_argument('csv_file', help='Path to CSV file containing URLs')
+    parser.add_argument('--delay', type=int, default=0, help='Delay time between crawls (seconds), default is 0')
     return parser.parse_args()
 
 def main():
-    """主程序"""
+    """Main program"""
     args = parse_args()
     
-    # 讀取URL文件
-    urls = read_urls(args.url_file)
+    # Read URLs from CSV file
+    csv_file_path = args.csv_file
+    logger.info(f"Reading CSV file: {csv_file_path}...")
+    urls = read_urls_from_csv(csv_file_path)
     
     if not urls:
-        logger.error("未找到有效URL")
+        logger.error("No valid URLs found")
         return 1
     
-    logger.info(f"找到 {len(urls)} 個URL，開始爬取...")
+    logger.info(f"Found {len(urls)} URLs, starting crawl...")
     
-    # 統計爬取結果
+    # Track crawl results
     success_count = 0
     failed_urls = []
     
-    # 逐個爬取URL
+    # Crawl each URL
     for i, url in enumerate(urls, 1):
-        logger.info(f"\n[{i}/{len(urls)}] 正在爬取: {url}")
+        logger.info(f"\n[{i}/{len(urls)}] Crawling: {url}")
         
-        # 運行爬蟲 (使用簡短日誌模式)
+        # Run spider (with minimal logging)
         try:
             if run_spider(url, verbose=False):
                 success_count += 1
-                logger.info(f"[{i}/{len(urls)}] 爬取成功: {url}")
+                logger.info(f"[{i}/{len(urls)}] Crawl successful: {url}")
             else:
                 failed_urls.append(url)
-                logger.warning(f"[{i}/{len(urls)}] 爬取失敗: {url}")
+                logger.warning(f"[{i}/{len(urls)}] Crawl failed: {url}")
         except Exception as e:
-            logger.error(f"爬取URL時發生錯誤: {e}")
+            logger.error(f"Error crawling URL: {e}")
             failed_urls.append(url)
         
-        # 延遲一段時間，避免頻繁請求
-        if i < len(urls):
+        # Add delay between requests if needed
+        if i < len(urls) and args.delay > 0:
             delay = args.delay
-            logger.info(f"等待{delay}秒後繼續爬取下一個URL...")
+            logger.info(f"Waiting {delay} seconds before next URL...")
             time.sleep(delay)
     
-    # 輸出統計信息
-    logger.info("\n======= 爬取完成 =======")
-    logger.info(f"成功: {success_count}/{len(urls)}")
+    # Output statistics
+    logger.info("\n======= Crawl Completed =======")
+    logger.info(f"Successful: {success_count}/{len(urls)}")
     
     if failed_urls:
-        logger.warning(f"失敗: {len(failed_urls)}/{len(urls)}")
-        logger.warning("失敗的URL:")
+        logger.warning(f"Failed: {len(failed_urls)}/{len(urls)}")
+        logger.warning("Failed URLs:")
         for url in failed_urls:
             logger.warning(f"  - {url}")
         
-        # 保存失敗的URL到文件
-        with open('failed_urls.txt', 'w') as f:
+        # Save failed URLs to file
+        from path_config import ROOT_DIR
+        failed_file = os.path.join(ROOT_DIR, 'failed_urls.txt')
+        with open(failed_file, 'w') as f:
             for url in failed_urls:
                 f.write(f"{url}\n")
-        logger.info("已將失敗的URL保存到 failed_urls.txt")
+        logger.info(f"Failed URLs saved to {failed_file}")
     
     return 0 if success_count == len(urls) else 1
 
 if __name__ == "__main__":
-    sys.exit(main()) 
+    sys.exit(main())

@@ -1,14 +1,15 @@
 import scrapy
 
 class GalisonItem(scrapy.Item):
-    # 基本產品信息
+    # Basic product information
     title = scrapy.Field()
     price = scrapy.Field()
     description = scrapy.Field()
     author = scrapy.Field()
     product_number = scrapy.Field()
+    product_id = scrapy.Field()  # 用于图片存储的产品ID标识
     product_details = scrapy.Field()
     
-    # 圖片相關欄位 (Scrapy的圖片下載需要)
+    # Image related fields (required for Scrapy's image download)
     image_urls = scrapy.Field()
     images = scrapy.Field() 

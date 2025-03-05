@@ -1,29 +1,36 @@
 #!/usr/bin/env python
 """
-拼圖產品爬蟲啟動腳本
-用法: python crawl.py [URL]
-如果未提供URL，將使用默認URL
+Puzzle product crawler script
+Usage: python crawl.py [URL]
+If no URL is provided, the default URL will be used
 """
 
 import sys
+import os
 import argparse
-from crawler_utils import run_spider, logger
+
+# Ensure parent directory in PATH
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+from scripts.crawler_utils import run_spider, logger
 
 def parse_args():
-    """解析命令行參數"""
-    parser = argparse.ArgumentParser(description='爬取單個拼圖產品頁面')
-    parser.add_argument('url', nargs='?', help='要爬取的URL（可選）')
+    """Parse command line arguments"""
+    parser = argparse.ArgumentParser(description='Crawl a single puzzle product page')
+    parser.add_argument('url', nargs='?', help='URL to crawl (optional)')
     return parser.parse_args()
 
 def main():
-    """主程序"""
+    """Main program"""
     args = parse_args()
     url = args.url
     
-    logger.info("===== 單一URL爬蟲啟動 =====")
+    logger.info("===== Single URL Crawler Started =====")
     success = run_spider(url)
     
     return 0 if success else 1
 
 if __name__ == "__main__":
-    sys.exit(main()) 
+    sys.exit(main())
