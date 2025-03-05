@@ -13,8 +13,8 @@ import os
 import sys
 
 # ===== 站点配置 - 修改这些变量以适应不同网站 =====
-SITE_NAME = "galison"                   # 网站名称，用于输出文件命名
-SITE_URL = "https://www.galison.com"    # 网站基础URL
+SITE_NAME = "whitemountainpuzzles"                   # 网站名称，用于输出文件命名
+SITE_URL = "https://www.whitemountainpuzzles.com"    # 网站基础URL
 MAIN_SITEMAP = f"{SITE_URL}/sitemap.xml" # 主站点地图URL
 KEYWORD = "puzzle"                      # 要提取的关键词
 FILTER_EXACT_WORD = True                # 是否精确匹配整词
